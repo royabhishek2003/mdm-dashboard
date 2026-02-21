@@ -25,10 +25,11 @@ export default function MainLayout() {
   };
 
   if (!user) {
-    return null; // Prevent rendering layout without authenticated user
+    return null;
   }
 
   const isReadOnly = user.role === 'ANALYST';
+  const isAdmin = user.role === 'ADMIN';
 
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-100">
@@ -55,16 +56,35 @@ export default function MainLayout() {
             Dashboard
           </NavLink>
 
-          {!isReadOnly && (
-            <NavLink to="/rollouts" className={navLinkClasses}>
-              Rollouts
-            </NavLink>
-          )}
+          {/* Rollouts */}
+          {/* Rollouts */}
+{!isReadOnly ? (
+  <>
+    <NavLink to="/rollouts" className={navLinkClasses}>
+      Rollouts
+    </NavLink>
 
-          {isReadOnly && (
-            <div className="rounded-md px-3 py-2 text-sm text-slate-500 cursor-not-allowed">
-              Rollouts (Restricted)
-            </div>
+    <NavLink to="/rollout-history" className={navLinkClasses}>
+      Rollout History
+    </NavLink>
+  </>
+) : (
+  <>
+    <div className="rounded-md px-3 py-2 text-sm text-slate-500 cursor-not-allowed">
+      Rollouts (Restricted)
+    </div>
+
+    <div className="rounded-md px-3 py-2 text-sm text-slate-500 cursor-not-allowed">
+      Rollout History (Restricted)
+    </div>
+  </>
+)}
+
+          {/* 🔐 Audit Logs (ADMIN only) */}
+          {isAdmin && (
+            <NavLink to="/audit-logs" className={navLinkClasses}>
+              Audit Logs
+            </NavLink>
           )}
         </nav>
 

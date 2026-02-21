@@ -1,5 +1,7 @@
 
 
+
+
 // import { createSlice, createAsyncThunk, nanoid } from '@reduxjs/toolkit';
 // import { scheduleRollout } from '../../services/rolloutService.js';
 
@@ -48,14 +50,13 @@
 //         if (
 //           rollout.status === 'cancelled' ||
 //           rollout.status === 'completed' ||
+//           rollout.status === 'pending_approval' || // ✅ block until approved
 //           rollout.isPaused
 //         ) {
 //           return;
 //         }
 
-//         /* ---------------------------------------
-//            Handle Scheduled Start
-//         ---------------------------------------- */
+//         /* Scheduled start check */
 //         if (
 //           rollout.scheduleType === 'scheduled' &&
 //           rollout.scheduledAt &&
@@ -64,13 +65,10 @@
 //           return;
 //         }
 
-//         /* ---------------------------------------
-//            Handle Phased Release Logic
-//            1 minute = 1 second simulation
-//         ---------------------------------------- */
+//         /* Phased release logic */
 //         if (rollout.scheduleType === 'phased') {
 //           const intervalMs =
-//             rollout.phasedIntervalMinutes * 1000; // 🔥 minute → second
+//             rollout.phasedIntervalMinutes * 1000;
 
 //           if (!rollout.nextPhaseAt) {
 //             rollout.nextPhaseAt = now;
@@ -81,8 +79,7 @@
 //             now >= rollout.nextPhaseAt
 //           ) {
 //             const batchSize = Math.ceil(
-//               (rollout.totalDevices * rollout.phasedPercentage) /
-//                 100
+//               (rollout.totalDevices * rollout.phasedPercentage) / 100
 //             );
 
 //             const releaseCount = Math.min(
@@ -99,21 +96,22 @@
 //         }
 
 //         const stages = rollout.stages;
-//        const activePool =
-//   rollout.stages.scheduled +
-//   rollout.stages.notified +
-//   rollout.stages.downloading +
-//   rollout.stages.installing;
 
-// const base =
-//   rollout.scheduleType === 'phased'
-//     ? activePool
-//     : rollout.totalDevices;
+//         const activePool =
+//           stages.scheduled +
+//           stages.notified +
+//           stages.downloading +
+//           stages.installing;
 
-// const stepSize = Math.max(
-//   1,
-//   Math.floor(base * 0.25)
-// );
+//         const base =
+//           rollout.scheduleType === 'phased'
+//             ? activePool
+//             : rollout.totalDevices;
+
+//         const stepSize = Math.max(
+//           1,
+//           Math.floor(base * 0.25)
+//         );
 
 //         if (stages.scheduled > 0) {
 //           moveStage(stages, 'scheduled', 'notified', stepSize);
@@ -180,6 +178,14 @@
 //         rollout.status = 'cancelled';
 //         rollout.cancelledAt = Date.now();
 //       }
+//     },
+
+//     approveRollout(state, action) {
+//       const rollout = state.items.find(r => r.id === action.payload);
+//       if (rollout && rollout.status === 'pending_approval') {
+//         rollout.status = 'scheduled';
+//         rollout.approvedAt = Date.now();
+//       }
 //     }
 //   },
 
@@ -196,8 +202,12 @@
 //         const payload = action.payload;
 //         const isAdmin = payload.createdByRole === 'ADMIN';
 //         const safeMandatory = isAdmin ? payload.mandatory : false;
-
 //         const isPhased = payload.rolloutType === 'phased';
+
+//         // 🔐 Simulated approval rule:
+//         // If created by OPS → requires ADMIN approval
+//         const requiresApproval =
+//           payload.createdByRole === 'OPS';
 
 //         state.items.push({
 //           id: payload.id || nanoid(),
@@ -218,9 +228,12 @@
 //           mandatory: safeMandatory,
 //           totalDevices: payload.totalDevices,
 //           createdByRole: payload.createdByRole,
-//           status: 'scheduled',
+//           status: requiresApproval
+//             ? 'pending_approval'
+//             : 'scheduled',
 //           isPaused: false,
 //           createdAt: Date.now(),
+//           approvedAt: null,
 //           startedAt: null,
 //           completedAt: null,
 //           cancelledAt: null,
@@ -234,7 +247,7 @@
 //             installing: 0,
 //             completed: 0,
 //             failed: 0
-//           }
+//           },
 //         });
 //       })
 
@@ -252,7 +265,8 @@
 //   advanceRolloutsTick,
 //   pauseRollout,
 //   resumeRollout,
-//   cancelRollout
+//   cancelRollout,
+//   approveRollout
 // } = rolloutsSlice.actions;
 
 // export const selectRollouts = state => state.rollouts.items;
@@ -260,9 +274,6 @@
 // export const selectRolloutsError = state => state.rollouts.error;
 
 // export default rolloutsSlice.reducer;
-
-
-
 
 
 
@@ -303,6 +314,12 @@ function moveStage(stages, from, to, stepSize) {
   return true;
 }
 
+function ensureAuditLogs(rollout) {
+  if (!rollout.auditLogs) {
+    rollout.auditLogs = [];
+  }
+}
+
 const rolloutsSlice = createSlice({
   name: 'rollouts',
   initialState,
@@ -314,13 +331,12 @@ const rolloutsSlice = createSlice({
         if (
           rollout.status === 'cancelled' ||
           rollout.status === 'completed' ||
-          rollout.status === 'pending_approval' || // ✅ block until approved
+          rollout.status === 'pending_approval' ||
           rollout.isPaused
         ) {
           return;
         }
 
-        /* Scheduled start check */
         if (
           rollout.scheduleType === 'scheduled' &&
           rollout.scheduledAt &&
@@ -329,7 +345,6 @@ const rolloutsSlice = createSlice({
           return;
         }
 
-        /* Phased release logic */
         if (rollout.scheduleType === 'phased') {
           const intervalMs =
             rollout.phasedIntervalMinutes * 1000;
@@ -407,6 +422,15 @@ const rolloutsSlice = createSlice({
         ) {
           rollout.status = 'completed';
           rollout.completedAt = now;
+
+          ensureAuditLogs(rollout);
+
+          rollout.auditLogs.push({
+            id: nanoid(),
+            action: 'COMPLETED',
+            performedBy: 'SYSTEM',
+            timestamp: now
+          });
         }
 
         rollout.progress = calculateProgress(
@@ -421,6 +445,15 @@ const rolloutsSlice = createSlice({
       if (rollout && !rollout.isPaused) {
         rollout.isPaused = true;
         rollout.pausedAt = Date.now();
+
+        ensureAuditLogs(rollout);
+
+        rollout.auditLogs.push({
+          id: nanoid(),
+          action: 'PAUSED',
+          performedBy: 'OPS/ADMIN',
+          timestamp: Date.now()
+        });
       }
     },
 
@@ -433,6 +466,15 @@ const rolloutsSlice = createSlice({
       ) {
         rollout.isPaused = false;
         rollout.resumedAt = Date.now();
+
+        ensureAuditLogs(rollout);
+
+        rollout.auditLogs.push({
+          id: nanoid(),
+          action: 'RESUMED',
+          performedBy: 'OPS/ADMIN',
+          timestamp: Date.now()
+        });
       }
     },
 
@@ -441,6 +483,15 @@ const rolloutsSlice = createSlice({
       if (rollout && rollout.status !== 'completed') {
         rollout.status = 'cancelled';
         rollout.cancelledAt = Date.now();
+
+        ensureAuditLogs(rollout);
+
+        rollout.auditLogs.push({
+          id: nanoid(),
+          action: 'CANCELLED',
+          performedBy: 'OPS/ADMIN',
+          timestamp: Date.now()
+        });
       }
     },
 
@@ -449,6 +500,15 @@ const rolloutsSlice = createSlice({
       if (rollout && rollout.status === 'pending_approval') {
         rollout.status = 'scheduled';
         rollout.approvedAt = Date.now();
+
+        ensureAuditLogs(rollout);
+
+        rollout.auditLogs.push({
+          id: nanoid(),
+          action: 'APPROVED',
+          performedBy: 'ADMIN',
+          timestamp: Date.now()
+        });
       }
     }
   },
@@ -467,9 +527,6 @@ const rolloutsSlice = createSlice({
         const isAdmin = payload.createdByRole === 'ADMIN';
         const safeMandatory = isAdmin ? payload.mandatory : false;
         const isPhased = payload.rolloutType === 'phased';
-
-        // 🔐 Simulated approval rule:
-        // If created by OPS → requires ADMIN approval
         const requiresApproval =
           payload.createdByRole === 'OPS';
 
@@ -504,6 +561,16 @@ const rolloutsSlice = createSlice({
           pausedAt: null,
           resumedAt: null,
           progress: 0,
+
+          auditLogs: [
+            {
+              id: nanoid(),
+              action: 'CREATED',
+              performedBy: payload.createdByRole,
+              timestamp: Date.now()
+            }
+          ],
+
           stages: {
             scheduled: isPhased ? 0 : payload.totalDevices,
             notified: 0,

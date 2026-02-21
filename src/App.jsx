@@ -5,14 +5,16 @@ import {
   selectIsAuthenticated,
   selectCurrentRole
 } from './features/auth/authSlice.js';
+
 import MainLayout from './layouts/MainLayout.jsx';
+import AuditLogs from './pages/AuditLogs.jsx';
+import RolloutHistory from './pages/RolloutHistory.jsx';
 
 const Dashboard = React.lazy(() => import('./pages/Dashboard.jsx'));
 const Rollouts = React.lazy(() => import('./pages/Rollouts.jsx'));
 const DeviceDetail = React.lazy(() => import('./pages/DeviceDetail.jsx'));
 const Login = React.lazy(() => import('./pages/Login.jsx'));
 
-// ✅ Small lightweight fallback loader
 function RouteLoader() {
   return (
     <div className="flex items-center justify-center h-screen bg-slate-950 text-slate-400">
@@ -39,6 +41,7 @@ function ProtectedRoute({ children, allowedRoles }) {
 export default function App() {
   return (
     <Routes>
+      {/* Login Route */}
       <Route
         path="/login"
         element={
@@ -48,6 +51,7 @@ export default function App() {
         }
       />
 
+      {/* Protected Layout */}
       <Route
         path="/"
         element={
@@ -56,6 +60,7 @@ export default function App() {
           </ProtectedRoute>
         }
       >
+        {/* Dashboard */}
         <Route
           index
           element={
@@ -65,6 +70,7 @@ export default function App() {
           }
         />
 
+        {/* Rollouts (OPS + ADMIN only) */}
         <Route
           path="rollouts"
           element={
@@ -76,6 +82,30 @@ export default function App() {
           }
         />
 
+        {/* 🔐 Audit Logs (ADMIN only) */}
+        <Route
+          path="audit-logs"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <Suspense fallback={<RouteLoader />}>
+                <AuditLogs />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+  path="rollout-history"
+  element={
+    <ProtectedRoute allowedRoles={['OPS', 'ADMIN']}>
+      <Suspense fallback={<RouteLoader />}>
+        <RolloutHistory />
+      </Suspense>
+    </ProtectedRoute>
+  }
+/>
+
+        {/* Device Detail */}
         <Route
           path="devices/:deviceId"
           element={
