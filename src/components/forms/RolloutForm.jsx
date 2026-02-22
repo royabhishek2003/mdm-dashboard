@@ -1,5 +1,5 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '../common/Button.jsx';
 import ConfirmDialog from '../common/ConfirmDialog.jsx';
 
@@ -19,6 +19,8 @@ import {
 import { selectDevices } from '../../features/devices/selectors.js';
 import { selectCurrentRole } from '../../features/auth/authSlice.js';
 import { createRollout } from '../../features/rollouts/rolloutsSlice.js';
+
+import { MANDATORY_CONFIRM_THRESHOLD } from '../../constants/rolloutConfig.js';
 
 export default function RolloutForm() {
   const devices = useSelector(selectDevices);
@@ -40,8 +42,20 @@ export default function RolloutForm() {
   const canSchedule = role === 'OPS' || role === 'ADMIN';
   const isAnalyst = role === 'ANALYST';
 
+  const isBelowThreshold =
+    matchingDevicesCount < MANDATORY_CONFIRM_THRESHOLD;
+
   /* -----------------------------------
-     Reset Form Helper
+     Auto-reset mandatory if below threshold
+  ------------------------------------ */
+  useEffect(() => {
+    if (isBelowThreshold && form.mandatory) {
+      updateField('mandatory', false);
+    }
+  }, [isBelowThreshold]);
+
+  /* -----------------------------------
+     Reset Form
   ------------------------------------ */
   const resetForm = () => {
     updateField('fromVersion', '');
@@ -57,7 +71,7 @@ export default function RolloutForm() {
   };
 
   /* -----------------------------------
-     Final Submit (After Confirmation)
+     Final Submit
   ------------------------------------ */
   const executeSubmit = async () => {
     await dispatch(
@@ -78,13 +92,11 @@ export default function RolloutForm() {
   const handleSubmit = async () => {
     if (!canSchedule) return;
 
-    // 🔒 Mandatory can only be created by ADMIN
     if (form.mandatory && !isAdmin) {
       alert('Only ADMIN can create mandatory rollouts.');
       return;
     }
 
-    // 🔒 Scheduled rollout validation
     if (form.rolloutType === 'scheduled') {
       if (!form.scheduledAt) {
         alert('Scheduled time is required.');
@@ -97,8 +109,11 @@ export default function RolloutForm() {
       }
     }
 
-    // 🔥 Confirm high-impact mandatory rollout
-    if (form.mandatory && matchingDevicesCount > 5) {
+    // 🔥 Threshold-based confirmation
+    if (
+      form.mandatory &&
+      matchingDevicesCount >= MANDATORY_CONFIRM_THRESHOLD
+    ) {
       setConfirmOpen(true);
       return;
     }
@@ -134,11 +149,70 @@ export default function RolloutForm() {
 
       case 2:
         return (
-          <RolloutTypeStep
-            form={form}
-            updateField={updateField}
-            role={role}
-          />
+          <>
+            <RolloutTypeStep
+              form={form}
+              updateField={updateField}
+              role={role}
+            />
+
+            {/* 🔥 Separated Mandatory Section */}
+            <div className="mt-6 border-t border-slate-700 pt-6">
+              <div
+                onClick={() => {
+                  if (!isAdmin) return;
+                  if (isBelowThreshold) return;
+
+                  updateField('mandatory', !form.mandatory);
+                }}
+                className={`rounded-lg border p-4 transition-all
+                ${
+                  form.mandatory
+                    ? 'border-red-600 bg-red-900/20'
+                    : 'border-slate-700 bg-slate-900/40 hover:border-red-500'
+                }
+                ${
+                  !isAdmin || isBelowThreshold
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'cursor-pointer'
+                }
+                `}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-red-400">
+                      Mandatory Update
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Forces update compliance across selected devices
+                    </div>
+                  </div>
+
+                  <div
+                    className={`h-5 w-5 rounded border
+                      ${
+                        form.mandatory
+                          ? 'bg-red-600 border-red-500'
+                          : 'border-slate-500'
+                      }`}
+                  />
+                </div>
+
+                {form.mandatory && (
+                  <div className="mt-3 text-[11px] text-red-300">
+                    ⚠ This rollout will force update devices and cannot be skipped by users.
+                  </div>
+                )}
+
+                {isBelowThreshold && (
+                  <div className="mt-2 text-[11px] text-amber-400">
+                    Mandatory rollout requires at least{' '}
+                    {MANDATORY_CONFIRM_THRESHOLD} devices.
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
         );
 
       case 3:
@@ -156,12 +230,10 @@ export default function RolloutForm() {
 
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-6 space-y-6">
-
       {renderStep()}
 
-      {/* Navigation Buttons */}
+      {/* Navigation */}
       <div className="flex justify-between">
-
         <Button
           variant="ghost"
           disabled={step === 0}
@@ -199,7 +271,7 @@ export default function RolloutForm() {
       <ConfirmDialog
         open={confirmOpen}
         title="High Impact Mandatory Rollout"
-        description={`This mandatory rollout will immediately affect ${matchingDevicesCount} devices. Please confirm to proceed.`}
+        description={`This mandatory rollout will force update ${matchingDevicesCount} devices. This action cannot be undone. Do you want to continue?`}
         confirmText="Confirm & Start"
         onConfirm={executeSubmit}
         onCancel={() => setConfirmOpen(false)}

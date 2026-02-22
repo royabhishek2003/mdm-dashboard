@@ -102,18 +102,6 @@ export default function RolloutTypeStep({ form, updateField, role }) {
   </div>
 )}
 
-      {/* Mandatory (Admin Only) */}
-      {isAdmin && (
-        <OptionCard
-          title="Mandatory Update"
-          description="Forces update compliance across selected devices"
-          selected={form.mandatory}
-          onClick={() =>
-            updateField('mandatory', !form.mandatory)
-          }
-          danger
-        />
-      )}
 
     </div>
   );
