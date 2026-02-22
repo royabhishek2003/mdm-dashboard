@@ -8,7 +8,7 @@ const initialState = {
   items: [],
   loading: false,
   error: null,
-  selectedRegion: null, // null = All
+  selectedRegion: null,
   loaded: false
 };
 
@@ -31,7 +31,7 @@ export const loadDevices = createAsyncThunk(
     condition: (_, { getState }) => {
       const { devices } = getState();
       if (devices.loading) {
-        return false; // prevent duplicate calls
+        return false;
       }
     }
   }
@@ -54,7 +54,8 @@ const devicesSlice = createSlice({
 
     refreshDevices(state) {
       state.loaded = false;
-    }
+    },
+
   },
 
   extraReducers: builder => {

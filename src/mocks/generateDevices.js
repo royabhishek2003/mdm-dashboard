@@ -53,13 +53,15 @@ function buildUpdateHistory(currentVersion, targetVersion, baseDate, status) {
         status: 'failed',
         message: 'Installation failed: Network timeout'
       });
-    } else {
+    } else if (compareVersions(currentVersion, targetVersion) === 0) {
+      // Only mark completed when versions actually match (device is up to date)
       history.push({
         timestamp: completedAt.toISOString(),
         status: 'completed',
         message: `Updated successfully to ${targetVersion}`
       });
     }
+    // Outdated devices without failure: history ends at 'installing' (update in progress)
   }
 
   return history;
@@ -108,10 +110,6 @@ export function generateDevices(count = 300) {
       updateStatus = 'installing';
     }
 
-    const complianceStatus =
-      updateStatus === 'updated' && !inactive
-        ? 'compliant'
-        : 'non_compliant';
 
     const updateHistory = buildUpdateHistory(
       currentVersion,
@@ -130,7 +128,7 @@ export function generateDevices(count = 300) {
       targetVersion,
       lastSeen: lastSeen.toISOString(),
       updateStatus,
-      complianceStatus,
+      isBlocked: false,
       updateHistory
     });
   }

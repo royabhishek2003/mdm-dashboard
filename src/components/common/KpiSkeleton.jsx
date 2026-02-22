@@ -1,9 +1,12 @@
+import React from 'react';
+
 export default function KpiSkeleton() {
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 animate-pulse">
-      <div className="h-4 w-24 bg-slate-700 rounded mb-3"></div>
-      <div className="h-6 w-16 bg-slate-600 rounded"></div>
-      <div className="h-3 w-20 bg-slate-700 rounded mt-2"></div>
+    <div className="relative flex flex-col overflow-hidden rounded-xl border border-slate-800/40 bg-slate-900/50 px-5 py-4 shadow-lg">
+      <div className="absolute left-0 inset-y-0 w-0.5 bg-slate-800 rounded-full" />
+      <div className="h-3 w-20 rounded-full animate-shimmer" />
+      <div className="mt-4 h-8 w-16 rounded-lg animate-shimmer" />
+      <div className="mt-2 h-2.5 w-24 rounded-full animate-shimmer" />
     </div>
   );
 }

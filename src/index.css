@@ -2,39 +2,225 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────
+   Google Font – Import
+───────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ─────────────────────────────────────────────
+   Base Reset
+───────────────────────────────────────────── */
 html,
 body,
 #root {
   height: 100%;
-}
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fadeInUp {
-  animation: fadeInUp 0.4s ease-out;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 body {
   @apply bg-slate-950 text-slate-100;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* ─────────────────────────────────────────────
+   Scrollbar
+───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { @apply bg-slate-700 rounded-full; }
+::-webkit-scrollbar-track { @apply bg-transparent; }
+
+/* ─────────────────────────────────────────────
+   Custom Keyframes
+───────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes pulseSoft {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes borderGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+  50%       { box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
+}
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(6px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-::-webkit-scrollbar-thumb {
-  @apply bg-slate-600 rounded-full;
+/* ─────────────────────────────────────────────
+   Animation Utility Classes
+───────────────────────────────────────────── */
+.animate-fadeInUp       { animation: fadeInUp    0.45s cubic-bezier(.16,1,.3,1) both; }
+.animate-fadeInDown     { animation: fadeInDown  0.35s cubic-bezier(.16,1,.3,1) both; }
+.animate-fadeIn         { animation: fadeIn      0.3s  ease-out both; }
+.animate-slideInLeft    { animation: slideInLeft 0.4s  cubic-bezier(.16,1,.3,1) both; }
+.animate-slideInRight   { animation: slideInRight 0.4s cubic-bezier(.16,1,.3,1) both; }
+.animate-scaleIn        { animation: scaleIn     0.3s  cubic-bezier(.16,1,.3,1) both; }
+.animate-pulseSoft      { animation: pulseSoft   2s    ease-in-out infinite; }
+.animate-spin-slow      { animation: spin-slow   3s    linear infinite; }
+.animate-countUp        { animation: countUp     0.5s  cubic-bezier(.16,1,.3,1) both; }
+.animate-borderGlow     { animation: borderGlow  2.5s  ease-in-out infinite; }
+
+/* Skeleton shimmer */
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(30,41,59,0.8) 0%,
+    rgba(51,65,85,0.5) 50%,
+    rgba(30,41,59,0.8) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
 }
 
-::-webkit-scrollbar-track {
-  @apply bg-slate-900;
+/* ─────────────────────────────────────────────
+   Glassmorphism Cards
+───────────────────────────────────────────── */
+.glass-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
+
+.glass-card-hover {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.glass-card-hover:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 0 0 1px rgba(99,102,241,0.12), 0 8px 40px -8px rgba(0,0,0,0.6);
+  transform: translateY(-1px);
+}
+
+/* ─────────────────────────────────────────────
+   Gradient Text
+───────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #E0E7FF 0%, #818CF8 50%, #60A5FA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─────────────────────────────────────────────
+   Glowing Button
+───────────────────────────────────────────── */
+.btn-glow {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+.btn-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+.btn-glow:hover {
+  box-shadow: 0 0 20px rgba(59,130,246,0.35), 0 4px 20px rgba(0,0,0,0.4);
+  transform: translateY(-1px);
+}
+.btn-glow:active { transform: translateY(0); }
+
+/* ─────────────────────────────────────────────
+   Progress Bar
+───────────────────────────────────────────── */
+.progress-bar-track {
+  @apply h-1.5 w-full rounded-full bg-slate-800 overflow-hidden;
+}
+.progress-bar-fill {
+  @apply h-full rounded-full transition-all duration-700 ease-out;
+}
+
+/* Active rollout progress glow */
+.progress-glow {
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* ─────────────────────────────────────────────
+   Nav Active State
+───────────────────────────────────────────── */
+.nav-link-active {
+  background: linear-gradient(90deg, rgba(99,102,241,0.2) 0%, rgba(99,102,241,0.05) 100%);
+  border-left: 2px solid #818CF8;
+  color: #e0e7ff;
+}
+
+/* ─────────────────────────────────────────────
+   Table Row Hover
+───────────────────────────────────────────── */
+.table-row-hover {
+  transition: background-color 0.12s ease;
+}
+.table-row-hover:hover {
+  background: rgba(99, 102, 241, 0.06);
+}
+
+/* ─────────────────────────────────────────────
+   Monospace
+───────────────────────────────────────────── */
+.font-mono-custom {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ─────────────────────────────────────────────
+   Input Focus Glow
+───────────────────────────────────────────── */
+.input-glow {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.input-glow:focus {
+  border-color: rgba(99,102,241,0.6);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  outline: none;
+}
+
+/* ─────────────────────────────────────────────
+   Dot Pulse (live indicators)
+───────────────────────────────────────────── */
+@keyframes dotPulse {
+  0%, 100% { transform: scale(1);   opacity: 1; }
+  50%       { transform: scale(1.6); opacity: 0.6; }
+}
+.dot-pulse { animation: dotPulse 1.5s ease-in-out infinite; }
+
+/* ─────────────────────────────────────────────
+   Stagger helpers
+───────────────────────────────────────────── */
+.stagger-1  { animation-delay:  40ms; }
+.stagger-2  { animation-delay:  80ms; }
+.stagger-3  { animation-delay: 120ms; }
+.stagger-4  { animation-delay: 160ms; }
+.stagger-5  { animation-delay: 200ms; }

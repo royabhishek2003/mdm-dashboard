@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import devicesReducer from '../features/devices/devicesSlice.js';
 import rolloutsReducer from '../features/rollouts/rolloutsSlice.js';
 import authReducer from '../features/auth/authSlice.js';
+import updateAuditReducer from '../features/updateAudit/updateAuditSlice.js';
 
 const STORAGE_KEY = 'mdm-dashboard-state-v1';
 
@@ -56,7 +57,8 @@ export const store = configureStore({
   reducer: {
     devices: devicesReducer,
     rollouts: rolloutsReducer,
-    auth: authReducer
+    auth: authReducer,
+    updateAudit: updateAuditReducer
   },
   preloadedState: loadState(),
   devTools: process.env.NODE_ENV !== 'production'
