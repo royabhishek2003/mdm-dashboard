@@ -12,56 +12,131 @@ function pickRandom(arr) {
 
 /* --------------------------------------------------
    Build Realistic Update Timeline
+
+   History rules per device scenario:
+   ─────────────────────────────────────────────────
+   updated / inactive-on-latest (currentVersion === targetVersion):
+     registered → scheduled → download_started → download_completed
+     → installation_started → installation_completed → completed   (ALL ✓)
+
+   outdated / inactive-on-old (currentVersion < targetVersion, not installing/failed):
+     registered → scheduled → download_started   (stuck, partial)
+
+   installing (status === 'installing'):
+     registered → scheduled → download_started → download_completed
+     → installation_started (status = 'installing_pending')         (in-progress)
+
+   failed:
+     registered → scheduled → download_started → download_completed
+     → installation_started → failed                                 (error)
+   ─────────────────────────────────────────────────
 --------------------------------------------------- */
 function buildUpdateHistory(currentVersion, targetVersion, baseDate, status) {
   const history = [];
 
+  /* ── Step 1: Registered (always) ─────────────── */
   const registeredAt = addDays(baseDate, -40);
   history.push({
     timestamp: registeredAt.toISOString(),
     status: 'registered',
-    message: 'Device registered with MDM'
+    message: 'Device registered with MDM',
   });
 
-  if (compareVersions(currentVersion, targetVersion) < 0) {
+  const isOnLatest = compareVersions(currentVersion, targetVersion) === 0;
+
+  /* ── If device is already on latest or was on latest (inactive but up-to-date)
+        show the FULL completed chain. Otherwise show partial based on state. ──── */
+
+  if (isOnLatest) {
+    /* Full completed flow */
     const scheduledAt = addDays(registeredAt, 20);
+    const dlStartAt = addDays(scheduledAt, 1);
+    const dlCompleteAt = addDays(dlStartAt, 0.5);       // 12 h later
+    const installStartAt = addDays(dlCompleteAt, 0.5);    // 12 h later
+    const installCompleteAt = addDays(installStartAt, 0.5);
+    const completedAt = addDays(installCompleteAt, 0.125); // 3 h later
+
     history.push({
       timestamp: scheduledAt.toISOString(),
       status: 'scheduled',
-      message: `Update scheduled to ${targetVersion}`
+      message: `Update scheduled to ${targetVersion}`,
     });
-
-    const downloadStart = addDays(scheduledAt, 1);
     history.push({
-      timestamp: downloadStart.toISOString(),
-      status: 'downloading',
-      message: 'Download started'
+      timestamp: dlStartAt.toISOString(),
+      status: 'download_started',
+      message: `Download started for ${targetVersion}`,
     });
-
-    const installStart = addDays(downloadStart, 1);
     history.push({
-      timestamp: installStart.toISOString(),
-      status: 'installing',
-      message: 'Installation in progress'
+      timestamp: dlCompleteAt.toISOString(),
+      status: 'download_completed',
+      message: `Download completed for ${targetVersion}`,
+    });
+    history.push({
+      timestamp: installStartAt.toISOString(),
+      status: 'installation_started',
+      message: `Installation started for ${targetVersion}`,
+    });
+    history.push({
+      timestamp: installCompleteAt.toISOString(),
+      status: 'installation_completed',
+      message: `Installation completed for ${targetVersion}`,
+    });
+    history.push({
+      timestamp: completedAt.toISOString(),
+      status: 'completed',
+      message: `Updated successfully to ${targetVersion}`,
     });
 
-    const completedAt = addDays(installStart, 1);
+  } else {
+    /* Device is outdated — how far did the update get? */
+    const scheduledAt = addDays(registeredAt, 20);
+    const dlStartAt = addDays(scheduledAt, 1);
+    const dlCompleteAt = addDays(dlStartAt, 0.5);
+    const installStartAt = addDays(dlCompleteAt, 0.5);
+    const failedAt = addDays(installStartAt, 0.5);
 
-    if (status === 'failed') {
+    history.push({
+      timestamp: scheduledAt.toISOString(),
+      status: 'scheduled',
+      message: `Update scheduled to ${targetVersion}`,
+    });
+    history.push({
+      timestamp: dlStartAt.toISOString(),
+      status: 'download_started',
+      message: `Download started for ${targetVersion}`,
+    });
+
+    if (status === 'installing') {
+      /* Download succeeded, installation still in progress */
       history.push({
-        timestamp: completedAt.toISOString(),
-        status: 'failed',
-        message: 'Installation failed: Network timeout'
+        timestamp: dlCompleteAt.toISOString(),
+        status: 'download_completed',
+        message: `Download completed for ${targetVersion}`,
       });
-    } else if (compareVersions(currentVersion, targetVersion) === 0) {
-      // Only mark completed when versions actually match (device is up to date)
       history.push({
-        timestamp: completedAt.toISOString(),
-        status: 'completed',
-        message: `Updated successfully to ${targetVersion}`
+        timestamp: installStartAt.toISOString(),
+        status: 'installing_pending',
+        message: `Installation in progress for ${targetVersion} — pending`,
+      });
+    } else if (status === 'failed') {
+      /* Download succeeded, install failed */
+      history.push({
+        timestamp: dlCompleteAt.toISOString(),
+        status: 'download_completed',
+        message: `Download completed for ${targetVersion}`,
+      });
+      history.push({
+        timestamp: installStartAt.toISOString(),
+        status: 'installation_started',
+        message: `Installation started for ${targetVersion}`,
+      });
+      history.push({
+        timestamp: failedAt.toISOString(),
+        status: 'failed',
+        message: 'Installation failed: Network timeout',
       });
     }
-    // Outdated devices without failure: history ends at 'installing' (update in progress)
+    /* outdated / inactive-on-old: history ends at download_started (stuck) */
   }
 
   return history;
@@ -110,12 +185,11 @@ export function generateDevices(count = 300) {
       updateStatus = 'installing';
     }
 
-
     const updateHistory = buildUpdateHistory(
       currentVersion,
       targetVersion,
       lastSeen,
-      updateStatus
+      updateStatus,
     );
 
     devices.push({
@@ -129,7 +203,7 @@ export function generateDevices(count = 300) {
       lastSeen: lastSeen.toISOString(),
       updateStatus,
       isBlocked: false,
-      updateHistory
+      updateHistory,
     });
   }
 
