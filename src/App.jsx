@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { Toaster } from 'react-hot-toast';
 import {
   selectIsAuthenticated,
   selectCurrentRole
@@ -40,81 +41,108 @@ function ProtectedRoute({ children, allowedRoles }) {
 
 export default function App() {
   return (
-    <Routes>
-      {/* Login Route */}
-      <Route
-        path="/login"
-        element={
-          <Suspense fallback={<RouteLoader />}>
-            <Login />
-          </Suspense>
-        }
+    <>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: 'rgba(15,23,42,0.95)',
+            color: '#f1f5f9',
+            border: '1px solid rgba(99,102,241,0.3)',
+            borderRadius: '12px',
+            backdropFilter: 'blur(16px)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.1)',
+            fontSize: '13px',
+            fontFamily: 'Inter, system-ui, sans-serif',
+            padding: '12px 16px',
+          },
+          success: {
+            iconTheme: { primary: '#34D399', secondary: '#022c22' },
+            style: { borderColor: 'rgba(52,211,153,0.3)' },
+          },
+          error: {
+            iconTheme: { primary: '#F87171', secondary: '#450a0a' },
+            style: { borderColor: 'rgba(248,113,113,0.3)' },
+          },
+        }}
       />
-
-      {/* Protected Layout */}
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <MainLayout />
-          </ProtectedRoute>
-        }
-      >
-        {/* Dashboard */}
+      <Routes>
+        {/* Login Route */}
         <Route
-          index
+          path="/login"
           element={
             <Suspense fallback={<RouteLoader />}>
-              <Dashboard />
+              <Login />
             </Suspense>
           }
         />
 
-        {/* Rollouts (OPS + ADMIN only) */}
+        {/* Protected Layout */}
         <Route
-          path="rollouts"
+          path="/"
           element={
-            <ProtectedRoute allowedRoles={['OPS', 'ADMIN']}>
-              <Suspense fallback={<RouteLoader />}>
-                <Rollouts />
-              </Suspense>
+            <ProtectedRoute>
+              <MainLayout />
             </ProtectedRoute>
           }
-        />
-
-        {/* 🔐 Audit Logs (ADMIN only) */}
-        <Route
-          path="audit-logs"
-          element={
-            <ProtectedRoute allowedRoles={['ADMIN']}>
+        >
+          {/* Dashboard */}
+          <Route
+            index
+            element={
               <Suspense fallback={<RouteLoader />}>
-                <AuditLogs />
+                <Dashboard />
               </Suspense>
-            </ProtectedRoute>
-          }
-        />
+            }
+          />
 
-        <Route
-  path="rollout-history"
-  element={
-    <ProtectedRoute allowedRoles={['OPS', 'ADMIN']}>
-      <Suspense fallback={<RouteLoader />}>
-        <RolloutHistory />
-      </Suspense>
-    </ProtectedRoute>
-  }
-/>
+          {/* Rollouts (OPS + ADMIN only) */}
+          <Route
+            path="rollouts"
+            element={
+              <ProtectedRoute allowedRoles={['OPS', 'ADMIN']}>
+                <Suspense fallback={<RouteLoader />}>
+                  <Rollouts />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Device Detail */}
-        <Route
-          path="devices/:deviceId"
-          element={
-            <Suspense fallback={<RouteLoader />}>
-              <DeviceDetail />
-            </Suspense>
-          }
-        />
-      </Route>
-    </Routes>
+          {/* 🔐 Audit Logs (ADMIN only) */}
+          <Route
+            path="audit-logs"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <Suspense fallback={<RouteLoader />}>
+                  <AuditLogs />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="rollout-history"
+            element={
+              <ProtectedRoute allowedRoles={['OPS', 'ADMIN']}>
+                <Suspense fallback={<RouteLoader />}>
+                  <RolloutHistory />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Device Detail */}
+          <Route
+            path="devices/:deviceId"
+            element={
+              <Suspense fallback={<RouteLoader />}>
+                <DeviceDetail />
+              </Suspense>
+            }
+          />
+        </Route>
+      </Routes>
+    </>
   );
 }

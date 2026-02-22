@@ -102,19 +102,23 @@ const rolloutsSlice = createSlice({
         -------------------------- */
 
         if (rollout.scheduleType === 'phased') {
-          const intervalMs =
-            rollout.phasedIntervalMinutes * 60 * 1000; // FIXED
+          // Treat the interval as SECONDS in simulation (UI demo)
+          // so "10 minutes" = 10 real seconds, making it visible in the UI.
+          const intervalMs = rollout.phasedIntervalMinutes * 1000;
 
           if (!rollout.nextPhaseAt) {
-            rollout.nextPhaseAt = now;
+            rollout.nextPhaseAt = now; // first batch fires immediately
           }
 
           if (
             rollout.remainingDevices > 0 &&
             now >= rollout.nextPhaseAt
           ) {
-            const batchSize = Math.ceil(
-              (rollout.totalDevices * rollout.phasedPercentage) / 100
+            const batchSize = Math.max(
+              1,
+              Math.ceil(
+                (rollout.totalDevices * rollout.phasedPercentage) / 100
+              )
             );
 
             const releaseCount = Math.min(
@@ -126,6 +130,7 @@ const rolloutsSlice = createSlice({
             rollout.remainingDevices -= releaseCount;
 
             rollout.currentPhase += 1;
+            // Schedule next batch after intervalMs
             rollout.nextPhaseAt = now + intervalMs;
           }
         }
@@ -224,11 +229,27 @@ const rolloutsSlice = createSlice({
 
         /* -------------------------
            COMPLETION CHECK
+           For phased rollouts: only complete when ALL batches are
+           released (remainingDevices === 0) AND the entire pipeline
+           has drained into completed/failed.
         -------------------------- */
+        const pipelineDone =
+          stages.scheduled === 0 &&
+          stages.notified === 0 &&
+          stages.downloading === 0 &&
+          stages.installing === 0;
+
+        const allDevicesAccountedFor =
+          stages.completed + stages.failed === rollout.totalDevices;
+
+        const allBatchesReleased =
+          rollout.scheduleType !== 'phased' ||
+          rollout.remainingDevices === 0;
 
         if (
-          stages.completed + stages.failed ===
-            rollout.totalDevices &&
+          pipelineDone &&
+          allDevicesAccountedFor &&
+          allBatchesReleased &&
           rollout.status !== 'cancelled'
         ) {
           rollout.status = 'completed';

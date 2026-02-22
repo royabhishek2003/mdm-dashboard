@@ -5,6 +5,7 @@ import {
   logout,
   selectCurrentUser
 } from '../features/auth/authSlice.js';
+import { useTheme } from '../app/ThemeContext.jsx';
 
 /* ─── Icons (inline SVG) ─────────────────────────────── */
 const icons = {
@@ -76,6 +77,7 @@ export default function MainLayout() {
   const user = useSelector(selectCurrentUser);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { theme, toggle } = useTheme();
 
   const handleLogout = () => {
     dispatch(logout());
@@ -95,10 +97,10 @@ export default function MainLayout() {
     .toUpperCase();
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+    <div className="flex min-h-screen text-slate-100" style={{ backgroundColor: 'var(--color-bg)' }}>
 
       {/* ── Sidebar ─────────────────────────────────────── */}
-      <aside className="relative flex w-64 flex-col border-r border-slate-800/60 bg-slate-950 animate-slideInLeft">
+      <aside className="mdm-sidebar relative flex h-screen w-64 flex-col border-r border-slate-800/60 bg-slate-950 animate-slideInLeft sticky top-0">
 
         {/* Subtle gradient top accent */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-indigo-500 via-blue-500 to-transparent" />
@@ -123,7 +125,7 @@ export default function MainLayout() {
         <div className="mx-4 h-px bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
 
         {/* Nav */}
-        <nav className="mt-4 flex-1 space-y-0.5 px-3 text-sm">
+        <nav className="mt-4 flex-1 overflow-y-auto space-y-0.5 px-3 text-sm pb-2">
           <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-600">
             Navigation
           </p>
@@ -185,10 +187,10 @@ export default function MainLayout() {
       </aside>
 
       {/* ── Main area ───────────────────────────────────── */}
-      <div className="flex flex-1 flex-col min-w-0">
+      <div className="mdm-main-bg flex flex-1 flex-col min-w-0">
 
         {/* Top header */}
-        <header className="flex items-center justify-between border-b border-slate-800/60 bg-slate-950/80 px-6 py-3 backdrop-blur-sm sticky top-0 z-10 animate-fadeInDown">
+        <header className="mdm-header flex items-center justify-between border-b border-slate-800/60 bg-slate-950/80 px-6 py-3 backdrop-blur-sm sticky top-0 z-10 animate-fadeInDown">
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 dot-pulse" />
             <span className="text-sm font-semibold text-slate-200">
@@ -201,6 +203,18 @@ export default function MainLayout() {
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
               {user.role}
             </span>
+
+            {/* ── Theme Toggle ─────────────────────────────── */}
+            <button
+              onClick={toggle}
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              className="theme-toggle-btn"
+              aria-label="Toggle theme"
+            >
+              <div className="thumb">
+                {theme === 'dark' ? '🌙' : '☀️'}
+              </div>
+            </button>
           </div>
         </header>
 

@@ -1,7 +1,7 @@
 import { addDays, randomPastDate, isInactiveSinceDays } from '../utils/dateUtils.js';
 import { compareVersions } from '../utils/versionUtils.js';
 
-const REGIONS = ['North America', 'EMEA', 'APAC', 'LATAM'];
+const REGIONS = ['North America', 'EMEA', 'APAC', 'LATAM', 'Delhi', 'Mumbai', 'Kolkata', 'Patna'];
 const OS_LIST = ['Android', 'iOS', 'Windows'];
 export const DEVICE_GROUPS = ['Corporate', 'BYOD', 'Kiosk', 'Warehouse'];
 const VERSIONS = ['1.0.0', '1.1.0', '1.2.0', '1.3.0', '2.0.0', '2.1.0'];
